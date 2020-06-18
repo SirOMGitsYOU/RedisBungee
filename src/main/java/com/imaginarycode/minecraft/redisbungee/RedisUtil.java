@@ -15,8 +15,10 @@ import java.util.UUID;
 @VisibleForTesting
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class RedisUtil {
-    protected static void createPlayer(ProxiedPlayer player, Pipeline pipeline, boolean fireEvent) {
-        createPlayer(player.getPendingConnection(), pipeline, fireEvent);
+
+    protected static void createPlayer(ProxiedPlayer player, Pipeline pipeline) {
+        createPlayer(player.getPendingConnection(), pipeline, true);
+
         if (player.getServer() != null)
             pipeline.hset("player:" + player.getUniqueId().toString(), "server", player.getServer().getInfo().getName());
     }
@@ -61,9 +63,8 @@ public class RedisUtil {
         // Need to use >=2.6 to use Lua optimizations.
         String[] args = redisVersion.split("\\.");
 
-        if (args.length < 2) {
+        if (args.length < 2)
             return false;
-        }
 
         int major = Integer.parseInt(args[0]);
         int minor = Integer.parseInt(args[1]);

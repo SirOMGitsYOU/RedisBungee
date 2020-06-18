@@ -20,6 +20,7 @@ public class LuaManager {
 
     @RequiredArgsConstructor
     public class Script {
+
         private final String script;
         private final String hashed;
 

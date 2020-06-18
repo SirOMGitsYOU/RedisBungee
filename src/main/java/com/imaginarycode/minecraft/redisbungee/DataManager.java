@@ -23,7 +23,6 @@ import redis.clients.jedis.Jedis;
 import java.net.InetAddress;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -61,17 +60,15 @@ public class DataManager implements Listener {
             return player.getServer() != null ? player.getServer().getInfo().getName() : null;
 
         try {
-            return serverCache.get(uuid, new Callable<String>() {
-                @Override
-                public String call() throws Exception {
-                    try (Jedis tmpRsc = plugin.getPool().getResource()) {
-                        return Objects.requireNonNull(tmpRsc.hget("player:" + uuid, "server"), "user not found");
-                    }
+            return serverCache.get(uuid, () -> {
+                try (Jedis tmpRsc = plugin.getPool().getResource()) {
+                    return Objects.requireNonNull(tmpRsc.hget("player:" + uuid, "server"), "user not found");
                 }
             });
         } catch (ExecutionException | UncheckedExecutionException e) {
             if (e.getCause() instanceof NullPointerException && e.getCause().getMessage().equals("user not found"))
                 return null; // HACK
+
             plugin.getLogger().log(Level.SEVERE, "Unable to get server", e);
             throw new RuntimeException("Unable to get server for " + uuid, e);
         }
@@ -84,17 +81,15 @@ public class DataManager implements Listener {
             return RedisBungee.getConfiguration().getServerId();
 
         try {
-            return proxyCache.get(uuid, new Callable<String>() {
-                @Override
-                public String call() throws Exception {
-                    try (Jedis tmpRsc = plugin.getPool().getResource()) {
-                        return Objects.requireNonNull(tmpRsc.hget("player:" + uuid, "proxy"), "user not found");
-                    }
+            return proxyCache.get(uuid, () -> {
+                try (Jedis tmpRsc = plugin.getPool().getResource()) {
+                    return Objects.requireNonNull(tmpRsc.hget("player:" + uuid, "proxy"), "user not found");
                 }
             });
         } catch (ExecutionException | UncheckedExecutionException e) {
             if (e.getCause() instanceof NullPointerException && e.getCause().getMessage().equals("user not found"))
                 return null; // HACK
+
             plugin.getLogger().log(Level.SEVERE, "Unable to get proxy", e);
             throw new RuntimeException("Unable to get proxy for " + uuid, e);
         }
@@ -107,20 +102,20 @@ public class DataManager implements Listener {
             return player.getAddress().getAddress();
 
         try {
-            return ipCache.get(uuid, new Callable<InetAddress>() {
-                @Override
-                public InetAddress call() throws Exception {
-                    try (Jedis tmpRsc = plugin.getPool().getResource()) {
-                        String result = tmpRsc.hget("player:" + uuid, "ip");
-                        if (result == null)
-                            throw new NullPointerException("user not found");
-                        return InetAddresses.forString(result);
-                    }
+            return ipCache.get(uuid, () -> {
+                try (Jedis tmpRsc = plugin.getPool().getResource()) {
+                    String result = tmpRsc.hget("player:" + uuid, "ip");
+
+                    if (result == null)
+                        throw new NullPointerException("user not found");
+
+                    return InetAddresses.forString(result);
                 }
             });
         } catch (ExecutionException | UncheckedExecutionException e) {
             if (e.getCause() instanceof NullPointerException && e.getCause().getMessage().equals("user not found"))
                 return null; // HACK
+
             plugin.getLogger().log(Level.SEVERE, "Unable to get IP", e);
             throw new RuntimeException("Unable to get IP for " + uuid, e);
         }
@@ -133,13 +128,10 @@ public class DataManager implements Listener {
             return 0;
 
         try {
-            return lastOnlineCache.get(uuid, new Callable<Long>() {
-                @Override
-                public Long call() throws Exception {
-                    try (Jedis tmpRsc = plugin.getPool().getResource()) {
-                        String result = tmpRsc.hget("player:" + uuid, "online");
-                        return result == null ? -1 : Long.valueOf(result);
-                    }
+            return lastOnlineCache.get(uuid, () -> {
+                try (Jedis tmpRsc = plugin.getPool().getResource()) {
+                    String result = tmpRsc.hget("player:" + uuid, "online");
+                    return result == null ? -1 : Long.parseLong(result);
                 }
             });
         } catch (ExecutionException e) {
@@ -201,23 +193,15 @@ public class DataManager implements Listener {
                 }.getType());
                 invalidate(message2.getTarget());
                 lastOnlineCache.put(message2.getTarget(), message2.getPayload().getTimestamp());
-                plugin.getProxy().getScheduler().runAsync(plugin, new Runnable() {
-                    @Override
-                    public void run() {
-                        plugin.getProxy().getPluginManager().callEvent(new PlayerLeftNetworkEvent(message2.getTarget()));
-                    }
-                });
+                plugin.getProxy().getScheduler().runAsync(plugin, () -> plugin.getProxy().getPluginManager().callEvent(new PlayerLeftNetworkEvent(message2.getTarget())));
                 break;
             case SERVER_CHANGE:
                 final DataManagerMessage<ServerChangePayload> message3 = RedisBungee.getGson().fromJson(jsonObject, new TypeToken<DataManagerMessage<ServerChangePayload>>() {
                 }.getType());
                 serverCache.put(message3.getTarget(), message3.getPayload().getServer());
-                plugin.getProxy().getScheduler().runAsync(plugin, new Runnable() {
-                    @Override
-                    public void run() {
-                        plugin.getProxy().getPluginManager().callEvent(new PlayerChangedServerNetworkEvent(message3.getTarget(), message3.getPayload().getOldServer(), message3.getPayload().getServer()));
-                    }
-                });
+                plugin.getProxy().getScheduler().runAsync(plugin, () ->
+                        plugin.getProxy().getPluginManager()
+                                .callEvent(new PlayerChangedServerNetworkEvent(message3.getTarget(), message3.getPayload().getOldServer(), message3.getPayload().getServer())));
                 break;
         }
     }

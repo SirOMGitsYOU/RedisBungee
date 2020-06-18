@@ -81,9 +81,10 @@ public class RedisBungeeAPI {
      */
     public final Collection<String> getHumanPlayersOnline() {
         Set<String> names = new HashSet<>();
-        for (UUID uuid : getPlayersOnline()) {
-            names.add(getNameFromUuid(uuid, false));
-        }
+
+        for (UUID uuid : getPlayersOnline())
+            names.add(this.getNameFromUuid(uuid, false));
+
         return names;
     }
 
@@ -296,4 +297,5 @@ public class RedisBungeeAPI {
     public final UUID getUuidFromName(@NonNull String name, boolean expensiveLookups) {
         return plugin.getUuidTranslator().getTranslatedUuid(name, expensiveLookups);
     }
+
 }

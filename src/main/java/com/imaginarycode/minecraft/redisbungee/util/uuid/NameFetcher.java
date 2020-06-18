@@ -2,12 +2,13 @@ package com.imaginarycode.minecraft.redisbungee.util.uuid;
 
 import com.google.gson.reflect.TypeToken;
 import com.imaginarycode.minecraft.redisbungee.RedisBungee;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.ResponseBody;
+import com.imaginarycode.minecraft.redisbungee.util.closer.Closer;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.ResponseBody;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -22,24 +23,28 @@ public class NameFetcher {
 
     public static List<String> nameHistoryFromUuid(UUID uuid) throws IOException {
         String url = "https://api.mojang.com/user/profiles/" + uuid.toString().replace("-", "") + "/names";
-        Request request = new Request.Builder().url(url).get().build();
-        ResponseBody body = httpClient.newCall(request).execute().body();
-        String response = body.string();
-        body.close();
 
-        Type listType = new TypeToken<List<Name>>() {
-        }.getType();
-        List<Name> names = RedisBungee.getGson().fromJson(response, listType);
+        try (Closer closer = new Closer()) {
+            Request request = new Request.Builder().url(url).get().build();
+            ResponseBody body = closer.add(httpClient.newCall(request).execute().body());
+            String response = body.string();
 
-        List<String> humanNames = new ArrayList<>();
-        for (Name name : names) {
-            humanNames.add(name.name);
+            Type listType = new TypeToken<List<Name>>() {
+            }.getType();
+            List<Name> names = RedisBungee.getGson().fromJson(response, listType);
+
+            List<String> humanNames = new ArrayList<>();
+            for (Name name : names)
+                humanNames.add(name.name);
+
+            return humanNames;
         }
-        return humanNames;
+
     }
 
     public static class Name {
         private String name;
         private long changedToAt;
     }
+
 }

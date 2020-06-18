@@ -2,8 +2,9 @@ package com.imaginarycode.minecraft.redisbungee.util.uuid;
 
 import com.google.common.collect.ImmutableList;
 import com.imaginarycode.minecraft.redisbungee.RedisBungee;
-import com.squareup.okhttp.*;
+import com.imaginarycode.minecraft.redisbungee.util.closer.Closer;
 import lombok.Setter;
+import okhttp3.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -38,20 +39,25 @@ public class UUIDFetcher implements Callable<Map<String, UUID>> {
     public Map<String, UUID> call() throws Exception {
         Map<String, UUID> uuidMap = new HashMap<>();
         int requests = (int) Math.ceil(names.size() / PROFILES_PER_REQUEST);
+
         for (int i = 0; i < requests; i++) {
-            String body = RedisBungee.getGson().toJson(names.subList(i * 100, Math.min((i + 1) * 100, names.size())));
-            Request request = new Request.Builder().url(PROFILE_URL).post(RequestBody.create(JSON, body)).build();
-            ResponseBody responseBody = httpClient.newCall(request).execute().body();
-            String response = responseBody.string();
-            responseBody.close();
+            String response;
+
+            try (Closer closer = new Closer()) {
+                String body = RedisBungee.getGson().toJson(names.subList(i * 100, Math.min((i + 1) * 100, names.size())));
+                Request request = new Request.Builder().url(PROFILE_URL).post(RequestBody.create(body, JSON)).build();
+                ResponseBody responseBody = closer.add(httpClient.newCall(request).execute().body());
+                response = responseBody.string();
+            }
+
             Profile[] array = RedisBungee.getGson().fromJson(response, Profile[].class);
             for (Profile profile : array) {
                 UUID uuid = UUIDFetcher.getUUID(profile.id);
                 uuidMap.put(profile.name, uuid);
             }
-            if (rateLimiting && i != requests - 1) {
+
+            if (rateLimiting && i != requests - 1)
                 Thread.sleep(100L);
-            }
         }
         return uuidMap;
     }

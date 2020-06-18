@@ -2,16 +2,18 @@ package com.imaginarycode.minecraft.redisbungee;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.*;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
 import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
 import com.imaginarycode.minecraft.redisbungee.events.PubSubMessageEvent;
-import com.imaginarycode.minecraft.redisbungee.util.*;
+import com.imaginarycode.minecraft.redisbungee.util.IOUtil;
+import com.imaginarycode.minecraft.redisbungee.util.LuaManager;
 import com.imaginarycode.minecraft.redisbungee.util.uuid.NameFetcher;
 import com.imaginarycode.minecraft.redisbungee.util.uuid.UUIDFetcher;
 import com.imaginarycode.minecraft.redisbungee.util.uuid.UUIDTranslator;
-import com.squareup.okhttp.Dispatcher;
-import com.squareup.okhttp.OkHttpClient;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,10 +21,11 @@ import lombok.NonNull;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Plugin;
-import net.md_5.bungee.api.scheduler.ScheduledTask;
 import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.config.ConfigurationProvider;
 import net.md_5.bungee.config.YamlConfiguration;
+import okhttp3.Dispatcher;
+import okhttp3.OkHttpClient;
 import redis.clients.jedis.*;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 
@@ -41,27 +44,20 @@ import static com.google.common.base.Preconditions.checkArgument;
  * The only function of interest is {@link #getApi()}, which exposes some functions in this class.
  */
 public final class RedisBungee extends Plugin {
-    @Getter
-    private static Gson gson = new Gson();
+
+    @Getter private static final Gson gson = new Gson();
     private static RedisBungeeAPI api;
-    @Getter(AccessLevel.PACKAGE)
-    private static PubSubListener psl = null;
-    @Getter
-    private JedisPool pool;
-    @Getter
-    private UUIDTranslator uuidTranslator;
-    @Getter(AccessLevel.PACKAGE)
-    private static RedisBungeeConfiguration configuration;
-    @Getter
-    private DataManager dataManager;
-    @Getter
-    private static OkHttpClient httpClient;
+    @Getter(AccessLevel.PACKAGE) private static PubSubListener psl = null;
+    @Getter private JedisPool pool;
+    @Getter private UUIDTranslator uuidTranslator;
+    @Getter(AccessLevel.PACKAGE) private static RedisBungeeConfiguration configuration;
+    @Getter private DataManager dataManager;
+    @Getter private static OkHttpClient httpClient;
     private volatile List<String> serverIds;
     private final AtomicInteger nagAboutServers = new AtomicInteger();
     private final AtomicInteger globalPlayerCount = new AtomicInteger();
     private Future<?> integrityCheck;
     private Future<?> heartbeatTask;
-    private boolean usingLua;
     private LuaManager.Script serverToPlayersScript;
     private LuaManager.Script getPlayerCountScript;
 
@@ -129,27 +125,25 @@ public final class RedisBungee extends Plugin {
         }
     }
 
+    @SuppressWarnings("unchecked")
     final Multimap<String, UUID> serversToPlayers() {
         try {
-            return serverToPlayersCache.get(SERVER_TO_PLAYERS_KEY, new Callable<Multimap<String, UUID>>() {
-                @Override
-                public Multimap<String, UUID> call() throws Exception {
-                    Collection<String> data = (Collection<String>) serverToPlayersScript.eval(ImmutableList.<String>of(), getServerIds());
+            return serverToPlayersCache.get(SERVER_TO_PLAYERS_KEY, () -> {
+                Collection<String> data = (Collection<String>) serverToPlayersScript.eval(ImmutableList.of(), getServerIds());
 
-                    ImmutableMultimap.Builder<String, UUID> builder = ImmutableMultimap.builder();
-                    String key = null;
-                    for (String s : data) {
-                        if (key == null) {
-                            key = s;
-                            continue;
-                        }
-
-                        builder.put(key, UUID.fromString(s));
-                        key = null;
+                ImmutableMultimap.Builder<String, UUID> builder = ImmutableMultimap.builder();
+                String key = null;
+                for (String s : data) {
+                    if (key == null) {
+                        key = s;
+                        continue;
                     }
 
-                    return builder.build();
+                    builder.put(key, UUID.fromString(s));
+                    key = null;
                 }
+
+                return builder.build();
             });
         } catch (ExecutionException e) {
             throw new RuntimeException(e);
@@ -161,7 +155,7 @@ public final class RedisBungee extends Plugin {
     }
 
     final int getCurrentCount() {
-        Long count = (Long) getPlayerCountScript.eval(ImmutableList.<String>of(), ImmutableList.<String>of());
+        Long count = (Long) getPlayerCountScript.eval(ImmutableList.of(), ImmutableList.of());
         return count.intValue();
     }
 
@@ -182,7 +176,7 @@ public final class RedisBungee extends Plugin {
                     keys.add("proxy:" + i + ":usersOnline");
                 }
                 if (!keys.isEmpty()) {
-                    Set<String> users = rsc.sunion(keys.toArray(new String[keys.size()]));
+                    Set<String> users = rsc.sunion(keys.toArray(new String[0]));
                     if (users != null && !users.isEmpty()) {
                         for (String user : users) {
                             try {
@@ -220,6 +214,7 @@ public final class RedisBungee extends Plugin {
         return Long.parseLong(timeRes.get(0));
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public void onEnable() {
         ThreadFactory factory = ((ThreadPoolExecutor) getExecutorService()).getThreadFactory();
@@ -246,7 +241,7 @@ public final class RedisBungee extends Plugin {
                 for (String s : info.split("\r\n")) {
                     if (s.startsWith("redis_version:")) {
                         String version = s.split(":")[1];
-                        if (!(usingLua = RedisUtil.canUseLua(version))) {
+                        if (!RedisUtil.canUseLua(version)) {
                             getLogger().warning("Your version of Redis (" + version + ") is not at least version 2.6. RedisBungee requires a newer version of Redis.");
                             throw new RuntimeException("Unsupported Redis version detected");
                         } else {
@@ -261,31 +256,29 @@ public final class RedisBungee extends Plugin {
                 tmpRsc.hset("heartbeats", configuration.getServerId(), tmpRsc.time().get(0));
 
                 long uuidCacheSize = tmpRsc.hlen("uuid-cache");
-                if (uuidCacheSize > 750000) {
-                    getLogger().info("Looks like you have a really big UUID cache! Run https://www.spigotmc.org/resources/redisbungeecleaner.8505/ as soon as possible.");
-                }
+                if (uuidCacheSize > 750000)
+                    getLogger()
+                            .info("Looks like you have a really big UUID cache! Run https://www.spigotmc.org/resources/redisbungeecleaner.8505/ as soon as possible.");
             }
             serverIds = getCurrentServerIds(true, false);
             uuidTranslator = new UUIDTranslator(this);
-            heartbeatTask = service.scheduleAtFixedRate(new Runnable() {
-                @Override
-                public void run() {
-                    try (Jedis rsc = pool.getResource()) {
-                        long redisTime = getRedisTime(rsc.time());
-                        rsc.hset("heartbeats", configuration.getServerId(), String.valueOf(redisTime));
-                    } catch (JedisConnectionException e) {
-                        // Redis server has disappeared!
-                        getLogger().log(Level.SEVERE, "Unable to update heartbeat - did your Redis server go away?", e);
-                        return;
-                    }
-                    try {
-                        serverIds = getCurrentServerIds(true, false);
-                        globalPlayerCount.set(getCurrentCount());
-                    } catch (Throwable e) {
-                        getLogger().log(Level.SEVERE, "Unable to update data - did your Redis server go away?", e);
-                    }
+            heartbeatTask = service.scheduleAtFixedRate(() -> {
+                try (Jedis rsc = pool.getResource()) {
+                    long redisTime = getRedisTime(rsc.time());
+                    rsc.hset("heartbeats", configuration.getServerId(), String.valueOf(redisTime));
+                } catch (JedisConnectionException e) {
+                    // Redis server has disappeared!
+                    getLogger().log(Level.SEVERE, "Unable to update heartbeat - did your Redis server go away?", e);
+                    return;
+                }
+                try {
+                    serverIds = getCurrentServerIds(true, false);
+                    globalPlayerCount.set(getCurrentCount());
+                } catch (Throwable e) {
+                    getLogger().log(Level.SEVERE, "Unable to update data - did your Redis server go away?", e);
                 }
             }, 0, 3, TimeUnit.SECONDS);
+
             dataManager = new DataManager(this);
             if (configuration.isRegisterBungeeCommands()) {
                 getProxy().getPluginManager().registerCommand(this, new RedisBungeeCommands.GlistCommand(this));
@@ -293,8 +286,9 @@ public final class RedisBungee extends Plugin {
                 getProxy().getPluginManager().registerCommand(this, new RedisBungeeCommands.LastSeenCommand(this));
                 getProxy().getPluginManager().registerCommand(this, new RedisBungeeCommands.IpCommand(this));
             }
-            getProxy().getPluginManager().registerCommand(this, new RedisBungeeCommands.SendToAll(this));
-            getProxy().getPluginManager().registerCommand(this, new RedisBungeeCommands.ServerId(this));
+
+            getProxy().getPluginManager().registerCommand(this, new RedisBungeeCommands.SendToAll());
+            getProxy().getPluginManager().registerCommand(this, new RedisBungeeCommands.ServerId());
             getProxy().getPluginManager().registerCommand(this, new RedisBungeeCommands.ServerIds());
             getProxy().getPluginManager().registerCommand(this, new RedisBungeeCommands.PlayerProxyCommand(this));
             getProxy().getPluginManager().registerCommand(this, new RedisBungeeCommands.PlistCommand(this));
@@ -304,67 +298,64 @@ public final class RedisBungee extends Plugin {
             getProxy().getPluginManager().registerListener(this, dataManager);
             psl = new PubSubListener();
             getProxy().getScheduler().runAsync(this, psl);
-            integrityCheck = service.scheduleAtFixedRate(new Runnable() {
-                @Override
-                public void run() {
-                    try (Jedis tmpRsc = pool.getResource()) {
-                        Set<String> players = getLocalPlayersAsUuidStrings();
-                        Set<String> playersInRedis = tmpRsc.smembers("proxy:" + configuration.getServerId() + ":usersOnline");
-                        List<String> lagged = getCurrentServerIds(false, true);
+            integrityCheck = service.scheduleAtFixedRate(() -> {
+                try (Jedis tmpRsc = pool.getResource()) {
+                    Set<String> players = getLocalPlayersAsUuidStrings();
+                    Set<String> playersInRedis = tmpRsc.smembers("proxy:" + configuration.getServerId() + ":usersOnline");
+                    List<String> lagged = getCurrentServerIds(false, true);
 
-                        // Clean up lagged players.
-                        for (String s : lagged) {
-                            Set<String> laggedPlayers = tmpRsc.smembers("proxy:" + s + ":usersOnline");
-                            tmpRsc.del("proxy:" + s + ":usersOnline");
-                            if (!laggedPlayers.isEmpty()) {
-                                getLogger().info("Cleaning up lagged proxy " + s + " (" + laggedPlayers.size() + " players)...");
-                                for (String laggedPlayer : laggedPlayers) {
-                                    RedisUtil.cleanUpPlayer(laggedPlayer, tmpRsc);
-                                }
+                    // Clean up lagged players.
+                    for (String s : lagged) {
+                        Set<String> laggedPlayers = tmpRsc.smembers("proxy:" + s + ":usersOnline");
+                        tmpRsc.del("proxy:" + s + ":usersOnline");
+                        if (!laggedPlayers.isEmpty()) {
+                            getLogger().info("Cleaning up lagged proxy " + s + " (" + laggedPlayers.size() + " players)...");
+                            for (String laggedPlayer : laggedPlayers) {
+                                RedisUtil.cleanUpPlayer(laggedPlayer, tmpRsc);
                             }
                         }
-
-                        Set<String> absentLocally = new HashSet<>(playersInRedis);
-                        absentLocally.removeAll(players);
-                        Set<String> absentInRedis = new HashSet<>(players);
-                        absentInRedis.removeAll(playersInRedis);
-
-                        for (String member : absentLocally) {
-                            boolean found = false;
-                            for (String proxyId : getServerIds()) {
-                                if (proxyId.equals(configuration.getServerId())) continue;
-                                if (tmpRsc.sismember("proxy:" + proxyId + ":usersOnline", member)) {
-                                    // Just clean up the set.
-                                    found = true;
-                                    break;
-                                }
-                            }
-                            if (!found) {
-                                RedisUtil.cleanUpPlayer(member, tmpRsc);
-                                getLogger().warning("Player found in set that was not found locally and globally: " + member);
-                            } else {
-                                tmpRsc.srem("proxy:" + configuration.getServerId() + ":usersOnline", member);
-                                getLogger().warning("Player found in set that was not found locally, but is on another proxy: " + member);
-                            }
-                        }
-
-                        Pipeline pipeline = tmpRsc.pipelined();
-
-                        for (String player : absentInRedis) {
-                            // Player not online according to Redis but not BungeeCord.
-                            getLogger().warning("Player " + player + " is on the proxy but not in Redis.");
-
-                            ProxiedPlayer proxiedPlayer = ProxyServer.getInstance().getPlayer(UUID.fromString(player));
-                            if (proxiedPlayer == null)
-                                continue; // We'll deal with it later.
-
-                            RedisUtil.createPlayer(proxiedPlayer, pipeline, true);
-                        }
-
-                        pipeline.sync();
-                    } catch (Throwable e) {
-                        getLogger().log(Level.SEVERE, "Unable to fix up stored player data", e);
                     }
+
+                    Set<String> absentLocally = new HashSet<>(playersInRedis);
+                    absentLocally.removeAll(players);
+                    Set<String> absentInRedis = new HashSet<>(players);
+                    absentInRedis.removeAll(playersInRedis);
+
+                    for (String member : absentLocally) {
+                        boolean found = false;
+                        for (String proxyId : getServerIds()) {
+                            if (proxyId.equals(configuration.getServerId())) continue;
+                            if (tmpRsc.sismember("proxy:" + proxyId + ":usersOnline", member)) {
+                                // Just clean up the set.
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            RedisUtil.cleanUpPlayer(member, tmpRsc);
+                            getLogger().warning("Player found in set that was not found locally and globally: " + member);
+                        } else {
+                            tmpRsc.srem("proxy:" + configuration.getServerId() + ":usersOnline", member);
+                            getLogger().warning("Player found in set that was not found locally, but is on another proxy: " + member);
+                        }
+                    }
+
+                    Pipeline pipeline = tmpRsc.pipelined();
+
+                    for (String player : absentInRedis) {
+                        // Player not online according to Redis but not BungeeCord.
+                        getLogger().warning("Player " + player + " is on the proxy but not in Redis.");
+
+                        ProxiedPlayer proxiedPlayer = ProxyServer.getInstance().getPlayer(UUID.fromString(player));
+                        if (proxiedPlayer == null)
+                            continue; // We'll deal with it later.
+
+                        RedisUtil.createPlayer(proxiedPlayer, pipeline);
+                    }
+
+                    pipeline.sync();
+                } catch (Throwable e) {
+                    getLogger().log(Level.SEVERE, "Unable to fix up stored player data", e);
                 }
             }, 0, 1, TimeUnit.MINUTES);
         }
@@ -394,6 +385,7 @@ public final class RedisBungee extends Plugin {
         }
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     private void loadConfig() throws IOException, JedisConnectionException {
         if (!getDataFolder().exists()) {
             getDataFolder().mkdir();
@@ -403,8 +395,7 @@ public final class RedisBungee extends Plugin {
 
         if (!file.exists()) {
             file.createNewFile();
-            try (InputStream in = getResourceAsStream("example_config.yml");
-                 OutputStream out = new FileOutputStream(file)) {
+            try (InputStream in = getResourceAsStream("example_config.yml"); OutputStream out = new FileOutputStream(file)) {
                 ByteStreams.copy(in, out);
             }
         }
@@ -427,14 +418,11 @@ public final class RedisBungee extends Plugin {
 
         if (redisServer != null && !redisServer.isEmpty()) {
             final String finalRedisPassword = redisPassword;
-            FutureTask<JedisPool> task = new FutureTask<>(new Callable<JedisPool>() {
-                @Override
-                public JedisPool call() throws Exception {
-                    // Create the pool...
-                    JedisPoolConfig config = new JedisPoolConfig();
-                    config.setMaxTotal(configuration.getInt("max-redis-connections", 8));
-                    return new JedisPool(config, redisServer, redisPort, 0, finalRedisPassword);
-                }
+            FutureTask<JedisPool> task = new FutureTask<>(() -> {
+                // Create the pool...
+                JedisPoolConfig config = new JedisPoolConfig();
+                config.setMaxTotal(configuration.getInt("max-redis-connections", 8));
+                return new JedisPool(config, redisServer, redisPort, 0, finalRedisPassword);
             });
 
             getProxy().getScheduler().runAsync(this, task);
@@ -466,17 +454,17 @@ public final class RedisBungee extends Plugin {
                     }
                 }
 
-                FutureTask<Void> task2 = new FutureTask<>(new Callable<Void>() {
-                    @Override
-                    public Void call() throws Exception {
-                        httpClient = new OkHttpClient();
-                        Dispatcher dispatcher = new Dispatcher(getExecutorService());
-                        httpClient.setDispatcher(dispatcher);
-                        NameFetcher.setHttpClient(httpClient);
-                        UUIDFetcher.setHttpClient(httpClient);
-                        RedisBungee.configuration = new RedisBungeeConfiguration(RedisBungee.this.getPool(), configuration);
-                        return null;
-                    }
+                FutureTask<Void> task2 = new FutureTask<>(() -> {
+                    Dispatcher dispatcher = new Dispatcher(getExecutorService());
+
+                    httpClient = new OkHttpClient.Builder()
+                            .dispatcher(dispatcher)
+                            .build();
+
+                    NameFetcher.setHttpClient(httpClient);
+                    UUIDFetcher.setHttpClient(httpClient);
+                    RedisBungee.configuration = new RedisBungeeConfiguration(RedisBungee.this.getPool(), configuration);
+                    return null;
                 });
 
                 getProxy().getScheduler().runAsync(this, task2);
@@ -502,7 +490,7 @@ public final class RedisBungee extends Plugin {
     class PubSubListener implements Runnable {
         private JedisPubSubHandler jpsh;
 
-        private Set<String> addedChannels = new HashSet<String>();
+        private final Set<String> addedChannels = new HashSet<>();
 
         @Override
         public void run() {
@@ -558,12 +546,7 @@ public final class RedisBungee extends Plugin {
         @Override
         public void onMessage(final String s, final String s2) {
             if (s2.trim().length() == 0) return;
-            getProxy().getScheduler().runAsync(RedisBungee.this, new Runnable() {
-                @Override
-                public void run() {
-                    getProxy().getPluginManager().callEvent(new PubSubMessageEvent(s, s2));
-                }
-            });
+            getProxy().getScheduler().runAsync(RedisBungee.this, () -> getProxy().getPluginManager().callEvent(new PubSubMessageEvent(s, s2)));
         }
     }
 }

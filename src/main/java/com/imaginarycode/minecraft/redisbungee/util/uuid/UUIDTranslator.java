@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 
 @RequiredArgsConstructor
 public final class UUIDTranslator {
+
     private static final Pattern UUID_PATTERN = Pattern.compile("[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}");
     private static final Pattern MOJANGIAN_UUID_PATTERN = Pattern.compile("[a-fA-F0-9]{32}");
     private final RedisBungee plugin;
@@ -186,7 +187,8 @@ public final class UUIDTranslator {
 
     @RequiredArgsConstructor
     @Getter
-    private class CachedUUIDEntry {
+    private static class CachedUUIDEntry {
+
         private final String name;
         private final UUID uuid;
         private final Calendar expiry;

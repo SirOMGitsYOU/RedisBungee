@@ -10,26 +10,22 @@ import java.net.InetAddress;
 import java.util.List;
 
 public class RedisBungeeConfiguration {
-    @Getter
-    private final JedisPool pool;
-    @Getter
-    private final String serverId;
-    @Getter
-    private final boolean registerBungeeCommands;
-    @Getter
-    private final List<InetAddress> exemptAddresses;
+
+    @Getter private final JedisPool pool;
+    @Getter private final String serverId;
+    @Getter private final boolean registerBungeeCommands;
+    @Getter private final List<InetAddress> exemptAddresses;
 
     public RedisBungeeConfiguration(JedisPool pool, Configuration configuration) {
         this.pool = pool;
         this.serverId = configuration.getString("server-id");
         this.registerBungeeCommands = configuration.getBoolean("register-bungee-commands", true);
 
-        List<String> stringified = configuration.getStringList("exempt-ip-addresses");
+        List<String> addressList = configuration.getStringList("exempt-ip-addresses");
         ImmutableList.Builder<InetAddress> addressBuilder = ImmutableList.builder();
 
-        for (String s : stringified) {
-            addressBuilder.add(InetAddresses.forString(s));
-        }
+        for (String address : addressList)
+            addressBuilder.add(InetAddresses.forString(address));
 
         this.exemptAddresses = addressBuilder.build();
     }
