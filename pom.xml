@@ -9,7 +9,30 @@
     <version>0.6</version>
     <packaging>jar</packaging>
 
+    <developers>
+        <developer>
+            <name>chunkr</name>
+            <roles>
+                <role>Author</role>
+            </roles>
+        </developer>
+
+        <developer>
+            <name>Alviann</name>
+            <roles>
+                <role>Maintainer</role>
+            </roles>
+        </developer>
+    </developers>
+
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
