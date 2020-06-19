@@ -1,9 +1,9 @@
 package com.imaginarycode.minecraft.redisbungee;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multimap;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.base.Preconditions;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.collect.ImmutableList;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.collect.ImmutableSet;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.collect.Multimap;
 import lombok.NonNull;
 import net.md_5.bungee.api.config.ServerInfo;
 

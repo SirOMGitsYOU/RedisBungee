@@ -1,6 +1,6 @@
 package com.imaginarycode.minecraft.redisbungee.util;
 
-import com.google.common.io.ByteStreams;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.io.ByteStreams;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -10,8 +10,7 @@ import java.nio.charset.StandardCharsets;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class IOUtil {
-
-    @SuppressWarnings("UnstableApiUsage")
+    
     public static String readInputStreamAsString(InputStream is) {
         String string;
         try {

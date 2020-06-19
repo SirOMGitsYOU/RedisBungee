@@ -1,14 +1,14 @@
 package com.imaginarycode.minecraft.redisbungee.util.uuid;
 
-import com.google.gson.reflect.TypeToken;
 import com.imaginarycode.minecraft.redisbungee.RedisBungee;
 import com.imaginarycode.minecraft.redisbungee.util.closer.Closer;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.gson.reflect.TypeToken;
+import dev.luckynetwork.alviann.luckyinjector.lib.okhttp3.OkHttpClient;
+import dev.luckynetwork.alviann.luckyinjector.lib.okhttp3.Request;
+import dev.luckynetwork.alviann.luckyinjector.lib.okhttp3.ResponseBody;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.ResponseBody;
 
 import java.io.IOException;
 import java.lang.reflect.Type;

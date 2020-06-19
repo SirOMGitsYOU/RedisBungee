@@ -2,7 +2,7 @@ package com.imaginarycode.minecraft.redisbungee.test;
 
 import com.imaginarycode.minecraft.redisbungee.util.uuid.NameFetcher;
 import com.imaginarycode.minecraft.redisbungee.util.uuid.UUIDFetcher;
-import okhttp3.OkHttpClient;
+import dev.luckynetwork.alviann.luckyinjector.lib.okhttp3.OkHttpClient;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -13,8 +13,8 @@ import java.util.UUID;
 
 public class UUIDNameTest {
 
-    private String[] uuidsToTest = {"68ec43f7234b41b48764dfb38b9ffe8c", "652a2bc4e8cd405db7b698156ee2dc09"};
-    private String[] namesToTest = {"vemacs"};
+    private final String[] uuidsToTest = {"68ec43f7234b41b48764dfb38b9ffe8c", "652a2bc4e8cd405db7b698156ee2dc09"};
+    private final String[] namesToTest = {"vemacs"};
 
     @Test
     public void testUuidToName() throws IOException {

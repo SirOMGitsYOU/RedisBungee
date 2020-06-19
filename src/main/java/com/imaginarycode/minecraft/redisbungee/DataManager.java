@@ -1,16 +1,16 @@
 package com.imaginarycode.minecraft.redisbungee;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.net.InetAddresses;
-import com.google.common.util.concurrent.UncheckedExecutionException;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
 import com.imaginarycode.minecraft.redisbungee.events.PlayerChangedServerNetworkEvent;
 import com.imaginarycode.minecraft.redisbungee.events.PlayerJoinedNetworkEvent;
 import com.imaginarycode.minecraft.redisbungee.events.PlayerLeftNetworkEvent;
 import com.imaginarycode.minecraft.redisbungee.events.PubSubMessageEvent;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.cache.Cache;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.cache.CacheBuilder;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.net.InetAddresses;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.util.concurrent.UncheckedExecutionException;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.gson.JsonObject;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.gson.JsonParser;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.gson.reflect.TypeToken;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.md_5.bungee.api.connection.ProxiedPlayer;

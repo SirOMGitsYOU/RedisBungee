@@ -6,7 +6,7 @@
 
     <groupId>com.imaginarycode.minecraft</groupId>
     <artifactId>RedisBungee</artifactId>
-    <version>0.6</version>
+    <version>0.7</version>
     <packaging>jar</packaging>
 
     <developers>
@@ -77,22 +77,6 @@
                                     <pattern>redis.clients.util</pattern>
                                     <shadedPattern>${project.groupId}.redisbungee.internal.jedisutil</shadedPattern>
                                 </relocation>
-                                <relocation>
-                                    <pattern>okhttp</pattern>
-                                    <shadedPattern>${project.groupId}.redisbungee.internal.okhttp</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>kotlin</pattern>
-                                    <shadedPattern>${project.groupId}.redisbungee.internal.kotlin</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>okio</pattern>
-                                    <shadedPattern>${project.groupId}.redisbungee.internal.okio</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>com.google</pattern>
-                                    <shadedPattern>${project.groupId}.redisbungee.internal.google</shadedPattern>
-                                </relocation>
                             </relocations>
                         </configuration>
                     </execution>
@@ -112,6 +96,11 @@
         <repository>
             <id>sonatype-repo</id>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </repository>
+        <!-- jitpack repo -->
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
         </repository>
     </repositories>
 
@@ -137,6 +126,17 @@
             <version>1.14-SNAPSHOT</version>
             <type>jar</type>
             <scope>provided</scope>
+
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.code.gson</groupId>
+                    <artifactId>gson</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- Lombok -->
         <dependency>
@@ -145,19 +145,12 @@
             <version>1.18.12</version>
             <scope>provided</scope>
         </dependency>
-        <!-- OkHttp for http requests -->
+        <!-- LuckyInjector -->
         <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>4.7.2</version>
-            <scope>compile</scope>
-        </dependency>
-        <!-- Google Guava -->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>29.0-jre</version>
-            <scope>compile</scope>
+            <groupId>com.github.Alviannn</groupId>
+            <artifactId>LuckyInjector</artifactId>
+            <version>1.6.0</version>
+            <scope>provided</scope>
         </dependency>
         <!-- test units -->
         <dependency>

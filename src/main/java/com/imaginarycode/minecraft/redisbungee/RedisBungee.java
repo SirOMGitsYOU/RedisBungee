@@ -1,19 +1,21 @@
 package com.imaginarycode.minecraft.redisbungee;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multimap;
-import com.google.common.io.ByteStreams;
-import com.google.gson.Gson;
 import com.imaginarycode.minecraft.redisbungee.events.PubSubMessageEvent;
 import com.imaginarycode.minecraft.redisbungee.util.IOUtil;
 import com.imaginarycode.minecraft.redisbungee.util.LuaManager;
 import com.imaginarycode.minecraft.redisbungee.util.uuid.NameFetcher;
 import com.imaginarycode.minecraft.redisbungee.util.uuid.UUIDFetcher;
 import com.imaginarycode.minecraft.redisbungee.util.uuid.UUIDTranslator;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.cache.Cache;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.cache.CacheBuilder;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.collect.ImmutableList;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.collect.ImmutableMultimap;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.collect.ImmutableSet;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.collect.Multimap;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.io.ByteStreams;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.gson.Gson;
+import dev.luckynetwork.alviann.luckyinjector.lib.okhttp3.Dispatcher;
+import dev.luckynetwork.alviann.luckyinjector.lib.okhttp3.OkHttpClient;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,8 +26,6 @@ import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.config.ConfigurationProvider;
 import net.md_5.bungee.config.YamlConfiguration;
-import okhttp3.Dispatcher;
-import okhttp3.OkHttpClient;
 import redis.clients.jedis.*;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 
@@ -36,7 +36,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 
-import static com.google.common.base.Preconditions.checkArgument;
+import static dev.luckynetwork.alviann.luckyinjector.lib.google.common.base.Preconditions.checkArgument;
 
 /**
  * The RedisBungee plugin.
@@ -385,7 +385,7 @@ public final class RedisBungee extends Plugin {
         }
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @SuppressWarnings({"ResultOfMethodCallIgnored", "deprecation"})
     private void loadConfig() throws IOException, JedisConnectionException {
         if (!getDataFolder().exists()) {
             getDataFolder().mkdir();

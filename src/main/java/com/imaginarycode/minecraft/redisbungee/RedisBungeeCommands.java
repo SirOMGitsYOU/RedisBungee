@@ -1,8 +1,8 @@
 package com.imaginarycode.minecraft.redisbungee;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.base.Joiner;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.collect.HashMultimap;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.collect.Multimap;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -321,7 +321,7 @@ class RedisBungeeCommands {
     }
 
     public static class DebugCommand extends Command {
-        
+
         private final RedisBungee plugin;
 
         DebugCommand(RedisBungee plugin) {

@@ -1,9 +1,9 @@
 package com.imaginarycode.minecraft.redisbungee.util.uuid;
 
-import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.imaginarycode.minecraft.redisbungee.RedisBungee;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.base.Charsets;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.collect.ImmutableMap;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.collect.Iterables;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;

@@ -1,10 +1,10 @@
 package com.imaginarycode.minecraft.redisbungee.util.uuid;
 
-import com.google.common.collect.ImmutableList;
 import com.imaginarycode.minecraft.redisbungee.RedisBungee;
 import com.imaginarycode.minecraft.redisbungee.util.closer.Closer;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.collect.ImmutableList;
+import dev.luckynetwork.alviann.luckyinjector.lib.okhttp3.*;
 import lombok.Setter;
-import okhttp3.*;
 
 import java.util.HashMap;
 import java.util.List;

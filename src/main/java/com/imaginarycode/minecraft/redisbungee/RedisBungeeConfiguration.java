@@ -1,7 +1,7 @@
 package com.imaginarycode.minecraft.redisbungee;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.net.InetAddresses;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.collect.ImmutableList;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.net.InetAddresses;
 import lombok.Getter;
 import net.md_5.bungee.config.Configuration;
 import redis.clients.jedis.JedisPool;

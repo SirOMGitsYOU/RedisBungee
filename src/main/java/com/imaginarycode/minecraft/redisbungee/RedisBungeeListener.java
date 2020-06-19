@@ -1,14 +1,14 @@
 package com.imaginarycode.minecraft.redisbungee;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multiset;
-import com.google.common.io.ByteArrayDataInput;
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
 import com.imaginarycode.minecraft.redisbungee.events.PubSubMessageEvent;
 import com.imaginarycode.minecraft.redisbungee.util.RedisCallable;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.base.Joiner;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.collect.HashMultimap;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.collect.Multimap;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.collect.Multiset;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.io.ByteArrayDataInput;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.io.ByteArrayDataOutput;
+import dev.luckynetwork.alviann.luckyinjector.lib.google.common.io.ByteStreams;
 import lombok.AllArgsConstructor;
 import net.md_5.bungee.api.AbstractReconnectHandler;
 import net.md_5.bungee.api.ChatColor;
@@ -144,7 +144,6 @@ public class RedisBungeeListener implements Listener {
         event.getResponse().getPlayers().setOnline(plugin.getCount());
     }
 
-    @SuppressWarnings("UnstableApiUsage")
     @EventHandler
     public void onPluginMessage(final PluginMessageEvent event) {
         if ((event.getTag().equals("legacy:RedisBungee") || event.getTag().equals("RedisBungee")) && event.getSender() instanceof Server) {
